@@ -1,0 +1,131 @@
+```py
+import os
+
+def read_file(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
+
+def write_file(path, data):
+    with open(path, 'w', encoding='utf-8') as f:
+        print(data, file=f)
+
+def append_file(path, data):
+    with open(path, 'a', encoding='utf-8') as f:
+        print(data, file=f)
+
+def delete_file(path):
+    os.remove(path)
+
+def does_file_exist(path):
+    return os.path.isfile(path)
+
+def get_files_in_directory(dir):
+    return [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
+
+if __name__ == '__main__':
+    print('Sample Python file')
+    print('Another line')
+    print('Yet another line')
+    print('This is line 5')
+    print('This is line 6')
+    print('More content')
+    print('Additional lines')
+    print('Keep adding lines')
+    print('Line 10')
+    print('Line 11')
+    print('Line 12')
+```
+```cs
+using System;
+using System.IO;
+
+class FileUtils
+{
+    public static string ReadFile(string path)
+    {
+        return File.ReadAllText(path);
+    }
+
+    public static void WriteFile(string path, string data)
+    {
+        File.WriteAllText(path, data);
+    }
+
+    public static void AppendFile(string path, string data)
+    {
+        File.AppendAllText(path, data);
+    }
+
+    public static void DeleteFile(string path)
+    {
+        File.Delete(path);
+    }
+
+    public static bool DoesFileExist(string path)
+    {
+        return File.Exists(path);
+    }
+
+    public static string[] GetFilesInDirectory(string dir)
+    {
+        return Directory.GetFiles(dir);
+    }
+
+    static void Main()
+    {
+        Console.WriteLine("Sample CS file");
+        Console.WriteLine("Another line");
+        Console.WriteLine("Yet another line");
+        Console.WriteLine("This is line 5");
+        Console.WriteLine("This is line 6");
+        Console.WriteLine("More content");
+        Console.WriteLine("Additional lines");
+        Console.WriteLine("Keep adding lines");
+        Console.WriteLine("Line 10");
+        Console.WriteLine("Line 11");
+        Console.WriteLine("Line 12");
+    }
+}
+```
+```js
+const fs = require('fs');
+const path = require('path');
+
+function readFileSync(path) {
+  return fs.readFileSync(path, 'utf8');
+}
+
+function writeFileSync(path, data) {
+  fs.writeFileSync(path, data, 'utf8');
+}
+
+function appendFileSync(path, data) {
+  fs.appendFileSync(path, data, 'utf8');
+}
+
+function deleteFileSync(path) {
+  fs.unlinkSync(path);
+}
+
+function doesFileExistSync(path) {
+  return fs.existsSync(path);
+}
+
+function getFilesInDirectorySync(dir) {
+  return fs.readdirSync(dir).filter(file => {
+    return fs.statSync(path.join(dir, file)).isFile();
+  });
+}
+
+console.log('Sample JS file');
+console.log('Another line');
+console.log('Yet another line');
+console.log('This is line 5');
+console.log('This is line 6');
+console.log('More content');
+console.log('Additional lines');
+console.log('Keep adding lines');
+console.log('Line 10');
+console.log('Line 11');
+console.log('Line 12');
+```
