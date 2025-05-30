@@ -5,7 +5,7 @@ import sys
 import argparse
 from pathlib import Path
 
-def concatenate_files_from_directory(directory, output_format='markdown', extensions=None):
+def concatenate_files_from_directory(directory, output_format='markdown', extensions=None, include_hidden=False):
     """
     Concatenates all text files in the given directory into a single prompt.
     """
@@ -26,6 +26,9 @@ def concatenate_files_from_directory(directory, output_format='markdown', extens
     
     for file_path in path_obj.iterdir():
         if file_path.is_file() and file_path.suffix.lower() in normalized_extensions:
+            # Skip hidden files unless include_hidden is True
+            if not include_hidden and file_path.name.startswith('.'):
+                continue
             file_paths.append(file_path)
     
     return concatenate_files_from_paths(file_paths, output_format)
@@ -86,6 +89,7 @@ def main():
                         help='Read file paths from stdin, separated by NUL characters (for use with find -print0)')
     parser.add_argument('-o', '--output', type=str, help='Output file path (default: combined.prompt in directory or current directory)')
     parser.add_argument('-e', '--extension', action='append', help='File extension to include (can be specified multiple times). Examples: -e txt -e py')
+    parser.add_argument('--include-hidden', action='store_true', help='Include hidden files (files starting with .)')
     args = parser.parse_args()
 
     # Determine the mode of operation
@@ -104,7 +108,7 @@ def main():
         if not args.directory:
             parser.error("directory argument is required when not using -0/--null option")
         
-        result = concatenate_files_from_directory(args.directory, args.format, args.extension)
+        result = concatenate_files_from_directory(args.directory, args.format, args.extension, args.include_hidden)
         
         # Determine output path
         if args.output:
