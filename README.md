@@ -1,254 +1,268 @@
 # files-to-prompt
 
+A Python script that concatenates text files from a directory into a single prompt file, with support for various output formats and filtering options.
+
 ## Usage
 
-To use `files-to-prompt`, provide the path to one or more files or directories you want to process:
+### Basic Usage
+
+To use the script, provide the path to a directory containing the files you want to concatenate:
 
 ```bash
-files-to-prompt path/to/file_or_directory [path/to/another/file_or_directory ...]
+python3 file_concat.py path/to/directory
 ```
 
-This will output the contents of every file, with each file preceded by its relative path and separated by `---`.
+This will create a `combined.prompt` file in the specified directory containing all text files (`.js`, `.cs`, `.py`, `.txt` by default) formatted as Markdown code blocks.
+
+### Reading from stdin
+
+The script can also read file paths from standard input using the `-0/--null` option:
+
+```bash
+find . -name "*.py" -print0 | python3 file_concat.py -0
+```
 
 ### Options
 
-- `-e/--extension <extension>`: Only include files with the specified extension. Can be used multiple times.
+- `-f/--format <format>`: Output format. Choices: `markdown` (default), `text`, `claude_xml`.
 
   ```bash
-  files-to-prompt path/to/directory -e txt -e md
+  python3 file_concat.py path/to/directory -f claude_xml
+  python3 file_concat.py path/to/directory -f text
   ```
 
-- `--include-hidden`: Include files and folders starting with `.` (hidden files and directories).
+- `-e/--extension <extension>`: File extension to include. Can be specified multiple times. Extensions can be with or without dots.
 
   ```bash
-  files-to-prompt path/to/directory --include-hidden
+  python3 file_concat.py path/to/directory -e txt -e py
+  python3 file_concat.py path/to/directory -e .md -e .js
   ```
 
-- `--ignore <pattern>`: Specify one or more patterns to ignore. Can be used multiple times. Patterns may match file names and directory names, unless you also specify `--ignore-files-only`. Pattern syntax uses [fnmatch](https://docs.python.org/3/library/fnmatch.html), which supports `*`, `?`, `[anychar]`, `[!notchars]` and `[?]` for special character literals.
+- `-o/--output <file>`: Output file path. Default is `combined.prompt` in the specified directory.
+
   ```bash
-  files-to-prompt path/to/directory --ignore "*.log" --ignore "temp*"
+  python3 file_concat.py path/to/directory -o output.txt
   ```
 
-- `--ignore-files-only`: Include directory paths which would otherwise be ignored by an `--ignore` pattern.
+- `--include-hidden`: Include hidden files (files starting with `.`).
 
   ```bash
-  files-to-prompt path/to/directory --ignore-files-only --ignore "*dir*"
+  python3 file_concat.py path/to/directory --include-hidden
   ```
 
-- `--ignore-gitignore`: Ignore `.gitignore` files and include all files.
+- `--ignore <pattern>`: Pattern to ignore. Can be specified multiple times. Uses [fnmatch](https://docs.python.org/3/library/fnmatch.html) syntax.
 
   ```bash
-  files-to-prompt path/to/directory --ignore-gitignore
+  python3 file_concat.py path/to/directory --ignore "*.log" --ignore "temp*"
   ```
 
-- `-c/--cxml`: Output in Claude XML format.
+- `--ignore-files-only`: Only ignore files matching patterns, not directories.
 
   ```bash
-  files-to-prompt path/to/directory --cxml
+  python3 file_concat.py path/to/directory --ignore-files-only --ignore "*test*"
   ```
 
-- `-m/--markdown`: Output as Markdown with fenced code blocks.
+- `--ignore-gitignore`: Ignore `.gitignore` files and include all files that would otherwise be ignored by git.
 
   ```bash
-  files-to-prompt path/to/directory --markdown
-  ```
-
-- `-o/--output <file>`: Write the output to a file instead of printing it to the console.
-
-  ```bash
-  files-to-prompt path/to/directory -o output.txt
+  python3 file_concat.py path/to/directory --ignore-gitignore
   ```
 
 - `-n/--line-numbers`: Include line numbers in the output.
 
   ```bash
-  files-to-prompt path/to/directory -n
-  ```
-  Example output:
-  ```
-  files_to_prompt/cli.py
-  ---
-    1  import os
-    2  from fnmatch import fnmatch
-    3
-    4  import click
-    ...
+  python3 file_concat.py path/to/directory -n
   ```
 
-- `-0/--null`: Use NUL character as separator when reading paths from stdin. Useful when filenames may contain spaces.
+- `-0/--null`: Read file paths from stdin, separated by NUL characters (for use with `find -print0`).
 
   ```bash
-  find . -name "*.py" -print0 | files-to-prompt --null
+  find . -name "*.py" -print0 | python3 file_concat.py -0
   ```
 
-### Example
+
+
+## Examples
+
+### Basic Example
 
 Suppose you have a directory structure like this:
 
 ```
 my_directory/
-├── file1.txt
-├── file2.txt
+├── script.py
+├── config.js
 ├── .hidden_file.txt
 ├── temp.log
 └── subdirectory/
-    └── file3.txt
+    └── utils.py
 ```
 
-Running `files-to-prompt my_directory` will output:
+Running `python3 file_concat.py my_directory` will create a `combined.prompt` file containing:
 
-```
-my_directory/file1.txt
----
-Contents of file1.txt
----
-my_directory/file2.txt
----
-Contents of file2.txt
----
-my_directory/subdirectory/file3.txt
----
-Contents of file3.txt
----
-```
-
-If you run `files-to-prompt my_directory --include-hidden`, the output will also include `.hidden_file.txt`:
-
-```
-my_directory/.hidden_file.txt
----
-Contents of .hidden_file.txt
----
-...
-```
-
-If you run `files-to-prompt my_directory --ignore "*.log"`, the output will exclude `temp.log`:
-
-```
-my_directory/file1.txt
----
-Contents of file1.txt
----
-my_directory/file2.txt
----
-Contents of file2.txt
----
-my_directory/subdirectory/file3.txt
----
-Contents of file3.txt
----
-```
-
-If you run `files-to-prompt my_directory --ignore "sub*"`, the output will exclude all files in `subdirectory/` (unless you also specify `--ignore-files-only`):
-
-```
-my_directory/file1.txt
----
-Contents of file1.txt
----
-my_directory/file2.txt
----
-Contents of file2.txt
----
-```
-
-### Reading from stdin
-
-The tool can also read paths from standard input. This can be used to pipe in the output of another command:
-
-```bash
-# Find files modified in the last day
-find . -mtime -1 | files-to-prompt
-```
-
-When using the `--null` (or `-0`) option, paths are expected to be NUL-separated (useful when dealing with filenames containing spaces):
-
-```bash
-find . -name "*.txt" -print0 | files-to-prompt --null
-```
-
-You can mix and match paths from command line arguments and stdin:
-
-```bash
-# Include files modified in the last day, and also include README.md
-find . -mtime -1 | files-to-prompt README.md
-```
-
-### Claude XML Output
-
-Anthropic has provided [specific guidelines](https://docs.anthropic.com/claude/docs/long-context-window-tips) for optimally structuring prompts to take advantage of Claude's extended context window.
-
-To structure the output in this way, use the optional `--cxml` flag, which will produce output like this:
-
-```xml
-<documents>
-<document index="1">
-<source>my_directory/file1.txt</source>
-<document_content>
-Contents of file1.txt
-</document_content>
-</document>
-<document index="2">
-<source>my_directory/file2.txt</source>
-<document_content>
-Contents of file2.txt
-</document_content>
-</document>
-</documents>
-```
-
-## --markdown fenced code block output
-
-The `--markdown` option will output the files as fenced code blocks, which can be useful for pasting into Markdown documents.
-
-```bash
-files-to-prompt path/to/directory --markdown
-```
-The language tag will be guessed based on the filename.
-
-If the code itself contains triple backticks the wrapper around it will use one additional backtick.
-
-Example output:
-`````
-myfile.py
-```python
-def my_function():
-    return "Hello, world!"
-```
-other.js
-```javascript
-function myFunction() {
-    return "Hello, world!";
-}
-```
-file_with_triple_backticks.md
 ````markdown
-This file has its own
+```py
+# Contents of script.py
+print("Hello, world!")
 ```
-fenced code blocks
+```js
+// Contents of config.js
+const config = { debug: true };
 ```
-Inside it.
+```py
+# Contents of utils.py
+def helper_function():
+    return "utility"
+```
 ````
-`````
+
+Note that only files with default extensions (`.js`, `.cs`, `.py`, `.txt`) are included, and `.hidden_file.txt` and `temp.log` are excluded because hidden files are ignored by default and `.log` files don't match the default extensions.
+
+### Including Hidden Files
+
+To include hidden files:
+
+```bash
+python3 file_concat.py my_directory --include-hidden
+```
+
+### Custom Extensions
+
+To include only specific file types:
+
+```bash
+python3 file_concat.py my_directory -e py -e js -e md
+```
+
+### Ignoring Patterns
+
+To exclude files matching certain patterns:
+
+```bash
+python3 file_concat.py my_directory --ignore "*.log" --ignore "temp*"
+```
+
+### Line Numbers
+
+To include line numbers in the output:
+
+```bash
+python3 file_concat.py my_directory -n
+```
+
+This will add line numbers to each file's content:
+
+````markdown
+```py
+  1  # Contents of script.py
+  2  print("Hello, world!")
+```
+````
+
+## Output Formats
+
+### Markdown Format (Default)
+
+The default output format creates Markdown with fenced code blocks. The language is inferred from the file extension:
+
+```bash
+python3 file_concat.py my_directory -f markdown
+```
+
+### Text Format
+
+Plain text format with file separators:
+
+```bash
+python3 file_concat.py my_directory -f text
+```
+
+This produces output like:
+```
+--- script.py ---
+print("Hello, world!")
+
+--- config.js ---
+const config = { debug: true };
+```
+
+### Claude XML Format
+
+Structured XML format optimized for Claude AI, following Anthropic's [guidelines](https://docs.anthropic.com/claude/docs/long-context-window-tips):
+
+```bash
+python3 file_concat.py my_directory -f claude_xml
+```
+
+This produces output like:
+```xml
+<document>
+  <document_content>print("Hello, world!")</document_content>
+  <source>script.py</source>
+  <language>py</language>
+</document>
+<document>
+  <document_content>const config = { debug: true };</document_content>
+  <source>config.js</source>
+  <language>js</language>
+</document>
+```
+
+## Advanced Usage
+
+### Reading from stdin with find
+
+The script can read file paths from stdin when using the `-0/--null` option:
+
+```bash
+# Find all Python files and concatenate them
+find . -name "*.py" -print0 | python3 file_concat.py -0
+
+# Find files modified in the last day
+find . -mtime -1 -name "*.txt" -print0 | python3 file_concat.py -0 -o recent_files.prompt
+```
+
+### Git Integration
+
+The script automatically respects `.gitignore` files. To include all files regardless of `.gitignore`:
+
+```bash
+python3 file_concat.py my_directory --ignore-gitignore
+```
+
+### Custom Output Location
+
+By default, the output file is created in the target directory. You can specify a custom location:
+
+```bash
+python3 file_concat.py my_directory -o /path/to/output.prompt
+```
+
+## Requirements
+
+This script requires Python 3.6 or later and uses only standard library modules:
+- `os`
+- `sys` 
+- `argparse`
+- `fnmatch`
+- `pathlib`
+
+No additional dependencies need to be installed.
 
 ## Development
 
-To contribute to this tool, first checkout the code. Then create a new virtual environment:
+To contribute to this tool:
 
-```bash
-cd files-to-prompt
-python -m venv venv
-source venv/bin/activate
-```
+1. Clone the repository
+2. The script is self-contained and requires no additional setup
+3. Test your changes by running the script with various options
+4. Make sure to test both directory mode and stdin mode (`-0` option)
 
-Now install the dependencies and test dependencies:
+## Features
 
-```bash
-pip install -e '.[test]'
-```
-
-To run the tests:
-
-```bash
-pytest
-```
+- **Automatic gitignore support**: Respects `.gitignore` files by default
+- **Multiple output formats**: Markdown, plain text, and Claude XML
+- **Flexible file filtering**: Custom extensions, ignore patterns, hidden files
+- **Line numbering**: Optional line numbers for better code reference
+- **stdin integration**: Works with `find` and other command-line tools
+- **Cross-platform**: Works on Windows, macOS, and Linux
