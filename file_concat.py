@@ -5,15 +5,27 @@ import sys
 import argparse
 from pathlib import Path
 
-def concatenate_files_from_directory(directory, output_format='markdown'):
+def concatenate_files_from_directory(directory, output_format='markdown', extensions=None):
     """
     Concatenates all text files in the given directory into a single prompt.
     """
     # Get all text files in the directory
     path_obj = Path(directory)
     file_paths = []
+    
+    # Default extensions if none specified
+    if extensions is None:
+        extensions = ['.js', '.cs', '.py', '.txt']
+    
+    # Add dots to extensions if not present and convert to lowercase for comparison
+    normalized_extensions = []
+    for ext in extensions:
+        if not ext.startswith('.'):
+            ext = '.' + ext
+        normalized_extensions.append(ext.lower())
+    
     for file_path in path_obj.iterdir():
-        if file_path.is_file() and file_path.suffix in ['.js', '.cs', '.py', '.txt']:
+        if file_path.is_file() and file_path.suffix.lower() in normalized_extensions:
             file_paths.append(file_path)
     
     return concatenate_files_from_paths(file_paths, output_format)
@@ -73,6 +85,7 @@ def main():
     parser.add_argument('-0', '--null', action='store_true',
                         help='Read file paths from stdin, separated by NUL characters (for use with find -print0)')
     parser.add_argument('-o', '--output', type=str, help='Output file path (default: combined.prompt in directory or current directory)')
+    parser.add_argument('-e', '--extension', action='append', help='File extension to include (can be specified multiple times). Examples: -e txt -e py')
     args = parser.parse_args()
 
     # Determine the mode of operation
@@ -91,7 +104,7 @@ def main():
         if not args.directory:
             parser.error("directory argument is required when not using -0/--null option")
         
-        result = concatenate_files_from_directory(args.directory, args.format)
+        result = concatenate_files_from_directory(args.directory, args.format, args.extension)
         
         # Determine output path
         if args.output:
