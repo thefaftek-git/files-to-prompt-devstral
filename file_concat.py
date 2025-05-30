@@ -101,7 +101,7 @@ def should_ignore(path, ignore_patterns, ignore_files_only=False, gitignore_patt
     
     return False
 
-def concatenate_files_from_directory(directory, output_format='markdown', extensions=None, include_hidden=False, ignore_patterns=None, ignore_files_only=False, ignore_gitignore=False):
+def concatenate_files_from_directory(directory, output_format='markdown', extensions=None, include_hidden=False, ignore_patterns=None, ignore_files_only=False, ignore_gitignore=False, line_numbers=False):
     """
     Concatenates all text files in the given directory into a single prompt.
     """
@@ -135,9 +135,26 @@ def concatenate_files_from_directory(directory, output_format='markdown', extens
                 
             file_paths.append(file_path)
     
-    return concatenate_files_from_paths(file_paths, output_format, ignore_patterns, ignore_files_only, gitignore_patterns, directory)
+    return concatenate_files_from_paths(file_paths, output_format, ignore_patterns, ignore_files_only, gitignore_patterns, directory, line_numbers)
 
-def concatenate_files_from_paths(file_paths, output_format='markdown', ignore_patterns=None, ignore_files_only=False, gitignore_patterns=None, base_dir=None):
+def add_line_numbers(content):
+    """
+    Add line numbers to content.
+    """
+    lines = content.split('\n')
+    # Calculate the width needed for line numbers
+    max_line_num = len(lines)
+    width = len(str(max_line_num))
+    
+    # Add line numbers with proper padding
+    numbered_lines = []
+    for i, line in enumerate(lines, 1):
+        line_num = str(i).rjust(width)
+        numbered_lines.append(f"  {line_num}  {line}")
+    
+    return '\n'.join(numbered_lines)
+
+def concatenate_files_from_paths(file_paths, output_format='markdown', ignore_patterns=None, ignore_files_only=False, gitignore_patterns=None, base_dir=None, line_numbers=False):
     """
     Concatenates files from a list of file paths into a single prompt.
     """
@@ -152,6 +169,10 @@ def concatenate_files_from_paths(file_paths, output_format='markdown', ignore_pa
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
+                    
+                    # Add line numbers if requested
+                    if line_numbers:
+                        content = add_line_numbers(content)
 
                     # Format the content based on output format
                     if output_format == 'markdown':
@@ -200,6 +221,7 @@ def main():
     parser.add_argument('--ignore', action='append', help='Pattern to ignore (can be specified multiple times). Examples: --ignore "*.log" --ignore "temp*"')
     parser.add_argument('--ignore-files-only', action='store_true', help='Include directory paths that would otherwise be ignored (only ignore files)')
     parser.add_argument('--ignore-gitignore', action='store_true', help='Ignore .gitignore files and include all files that would otherwise be ignored by git')
+    parser.add_argument('-n', '--line-numbers', action='store_true', help='Include line numbers in the output')
     args = parser.parse_args()
 
     # Determine the mode of operation
@@ -210,7 +232,7 @@ def main():
         # Use the current working directory as the base
         base_dir = os.getcwd()
         gitignore_patterns = None if args.ignore_gitignore else collect_gitignore_patterns(base_dir)
-        result = concatenate_files_from_paths(file_paths, args.format, args.ignore, args.ignore_files_only, gitignore_patterns, base_dir)
+        result = concatenate_files_from_paths(file_paths, args.format, args.ignore, args.ignore_files_only, gitignore_patterns, base_dir, args.line_numbers)
         
         # Determine output path
         if args.output:
@@ -222,7 +244,7 @@ def main():
         if not args.directory:
             parser.error("directory argument is required when not using -0/--null option")
         
-        result = concatenate_files_from_directory(args.directory, args.format, args.extension, args.include_hidden, args.ignore, args.ignore_files_only, args.ignore_gitignore)
+        result = concatenate_files_from_directory(args.directory, args.format, args.extension, args.include_hidden, args.ignore, args.ignore_files_only, args.ignore_gitignore, args.line_numbers)
         
         # Determine output path
         if args.output:
